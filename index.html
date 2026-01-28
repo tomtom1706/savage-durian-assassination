@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Savage Durian Assassination</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top, #1b4d3e, #0f2a1d);
+      color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 40px 32px 80px;
+      position: relative;
+      z-index: 1;
+    }
+    h1, h2, h3 { text-align: center; }
+    .subtitle {
+      text-align: center;
+      opacity: 0.9;
+      margin-bottom: 32px;
+      font-style: italic;
+    }
+
+    /* floating emojis */
+    .floating {
+      position: absolute;
+      font-size: 48px;
+      opacity: 0.25;
+      animation: float 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .f1 { top: 60px; left: 6%; animation-delay: 0s; }
+    .f2 { top: 140px; right: 8%; animation-delay: 2s; }
+    .f3 { bottom: 140px; left: 10%; animation-delay: 4s; }
+    .f4 { bottom: 80px; right: 12%; animation-delay: 1s; }
+    @keyframes float {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-16px); }
+      100% { transform: translateY(0); }
+    }
+
+    .baseline, .factor, .card {
+      background: rgba(255,255,255,0.05);
+      padding: 20px;
+      border-radius: 14px;
+      margin-bottom: 22px;
+    }
+    label {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .hint {
+      font-size: 0.85rem;
+      opacity: 0.75;
+      margin-top: 4px;
+    }
+    input[type=range] { width: 100%; }
+
+    .button {
+      margin-top: 36px;
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 14px 28px;
+      font-size: 15px;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #3cb371, #2e8b57);
+      color: #0f2a1d;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .hidden { display: none; }
+
+    /* log bar */
+    .log-bar {
+      width: 100%;
+      height: 24px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+    .log-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4ecdc4, #ff6b6b);
+      width: 100%;
+      transition: width 0.8s ease;
+    }
+
+    .numbers { text-align: center; margin-top: 14px; }
+    .scenario { font-size: 0.9rem; opacity: 0.85; margin-top: 8px; }
+  @media (max-width: 768px) {
+      .container { padding: 24px 16px 60px; }
+      h1 { font-size: 1.6rem; }
+      .floating { font-size: 32px; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- PAGE 1 + ITERATIVE SIM -->
+<div class="container" id="simPage">
+  <div class="floating f1">🌰</div>
+  <div class="floating f2">🦇</div>
+  <div class="floating f3">🌳</div>
+  <div class="floating f4">🏭</div>
+
+  <h1>Savage Durian Assassination 🌰🔪</h1>
+  <div class="subtitle" id="yearLabel">Reference year: 2026</div>
+
+  <div class="baseline">
+    🌰 Wild durian potential (2026): <strong>450,000,000</strong><br>
+    🏭 Industrial durian potential (2026): <strong>1,500,000</strong><br>
+    🌡 Average temperature: <strong>27°C</strong>
+  </div>
+
+  <div class="factor">
+    <label>🦇 Bat population change <span id="batVal">0</span>% / year</label>
+    <input type="range" min="-30" max="30" value="0" id="bat" />
+    <div class="hint">← decline | recovery →</div>
+  </div>
+
+  <div class="factor">
+    <label>🌳 Habitat change <span id="forestVal">0</span>% / year</label>
+    <input type="range" min="-20" max="20" value="0" id="forest" />
+    <div class="hint">← deforestation | regeneration →</div>
+  </div>
+
+  <div class="factor">
+    <label>🏭 Industrial durian expansion <span id="indVal">0</span>% / year</label>
+    <input type="range" min="0" max="25" value="0" id="industrial" />
+    <div class="hint">← no expansion | aggressive monoculture →</div>
+  </div>
+
+  <div class="factor">
+    <label>🌡 Average temperature <span id="tempVal">27</span>°C</label>
+    <input type="range" min="24" max="34" value="27" id="temp" />
+    <div class="hint">Optimal: 24–27°C</div>
+  </div>
+
+  <div class="factor">
+    <label>⏳ Jump forward <span id="timeVal">10</span> years</label>
+    <input type="range" min="1" max="50" value="10" id="time" />
+  </div>
+
+  <div class="log-bar"><div class="log-fill" id="logFill"></div></div>
+  <div class="numbers" id="numbers"></div>
+
+  <div class="button">
+    <button id="simulateBtn">🔮 Jump to the Future</button>
+    <button id="exportBtn">📥 Export scenarios</button>
+  </div>
+
+  <div class="card">
+    <h3>Recorded scenarios</h3>
+    <div id="scenarioList"></div>
+  </div>
+</div>
+
+<!-- PAGE 2: EXTINCTION ANALYSIS -->
+<div class="container hidden" id="chartPage">
+  <h2>Autopsy of the Forest ☠️🌳</h2>
+  <p style="text-align:center">Wild durian collapse over time</p>
+  <canvas id="extinctionChart" style="max-width:100%; height:auto;"></canvas>
+  <div class="button">
+    <button id="restartBtn">↩ Restart simulation</button>
+    <button id="printBtn">🖨 Print graph</button>
+  </div>
+</div>
+
+<script>
+  // ----------------------
+  // STATE
+  // ----------------------
+  let currentYear = 2026;
+  let wildDurian = 450_000_000;
+  let industrialDurian = 1_500_000;
+  let history = [];
+  let chartInstance = null;
+  let scenarios = JSON.parse(localStorage.getItem('durianScenarios') || '[]');
+
+  // ----------------------
+  // ELEMENTS
+  // ----------------------
+  const batEl = document.getElementById('bat');
+  const forestEl = document.getElementById('forest');
+  const indEl = document.getElementById('industrial');
+  const tempEl = document.getElementById('temp');
+  const timeEl = document.getElementById('time');
+  const logFill = document.getElementById('logFill');
+  const numbersEl = document.getElementById('numbers');
+  const yearLabel = document.getElementById('yearLabel');
+  const scenarioList = document.getElementById('scenarioList');
+
+  const bind = (el, out) => el.addEventListener('input', () => document.getElementById(out).textContent = el.value);
+  bind(batEl,'batVal');
+  bind(forestEl,'forestVal');
+  bind(indEl,'indVal');
+  bind(tempEl,'tempVal');
+  bind(timeEl,'timeVal');
+
+  document.getElementById('simulateBtn').addEventListener('click', simulate);
+  document.getElementById('exportBtn').addEventListener('click', exportScenarios);
+  document.getElementById('restartBtn').addEventListener('click', restartSimulation);
+  document.getElementById('printBtn').addEventListener('click', printGraph);
+
+  // ----------------------
+  // SIMULATION
+  // ----------------------
+  function simulate() {
+    const years = +timeEl.value;
+    const bat = +batEl.value;
+    const forest = +forestEl.value;
+    const ind = +indEl.value;
+    const temp = +tempEl.value;
+
+    for (let y = 0; y < years; y++) {
+      history.push({ year: currentYear, wild: wildDurian, industrial: industrialDurian });
+      wildDurian *= 1 + bat/100*0.3;
+      wildDurian *= 1 + forest/100*0.6;
+      industrialDurian *= 1 + ind/100;
+      wildDurian *= 1 - ind/100*0.4;
+      if (temp > 27) wildDurian *= 1 - (temp-27)*0.02;
+      if (temp < 24) wildDurian *= 1 - (24-temp)*0.03;
+      if (wildDurian < 1) wildDurian = 1;
+      currentYear++;
+    }
+
+    const scenario = {
+      name: `Scenario ${scenarios.length + 1}`,
+      from: currentYear - years,
+      to: currentYear,
+      bat, forest, ind, temp,
+      wild: Math.round(wildDurian)
+    };
+    scenarios.push(scenario);
+    localStorage.setItem('durianScenarios', JSON.stringify(scenarios));
+
+    updateUI();
+
+    if (wildDurian < 1000) showChart();
+  }
+
+  // ----------------------
+  // UI UPDATES
+  // ----------------------
+  function updateUI() {
+    yearLabel.textContent = `Current year: ${currentYear}`;
+    const logRatio = Math.log10(wildDurian) / Math.log10(450_000_000);
+    logFill.style.width = Math.max(2, logRatio * 100) + '%';
+    numbersEl.innerHTML = `🌰 Wild durian: <strong>${Math.round(wildDurian).toLocaleString()}</strong><br>
+                           🏭 Industrial durian: <strong>${Math.round(industrialDurian).toLocaleString()}</strong>`;
+    scenarioList.innerHTML = scenarios
+      .map(s => `<div class="scenario">${s.name} (${s.from}–${s.to}) → ${s.wild.toLocaleString()}</div>`)
+      .join('');
+  }
+
+  // ----------------------
+  // CHART
+  // ----------------------
+  function showChart() {
+    document.getElementById('simPage').classList.add('hidden');
+    document.getElementById('chartPage').classList.remove('hidden');
+
+    if (chartInstance) {
+      chartInstance.destroy();
+      chartInstance = null;
+    }
+
+    const ctx = document.getElementById('extinctionChart');
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: history.map(h => h.year),
+        datasets: [{
+          label: 'Wild durian (relative decline)',
+          data: history.map(h => Math.log10(h.wild)),
+          borderColor: '#ff6b6b',
+          tension: 0.3,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            type: 'linear',
+            ticks: {
+              callback: (value) => `10^${value}`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ----------------------
+  // EXPORT
+  // ----------------------
+  function exportScenarios() {
+    const blob = new Blob([JSON.stringify(scenarios, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'durian_scenarios.json';
+    a.click();
+  }
+
+  // ----------------------
+  // RESTART (FIXED)
+  // ----------------------
+  function restartSimulation() {
+    currentYear = 2026;
+    wildDurian = 450_000_000;
+    industrialDurian = 1_500_000;
+    history = [];
+
+    document.getElementById('chartPage').classList.add('hidden');
+    document.getElementById('simPage').classList.remove('hidden');
+
+    yearLabel.textContent = 'Reference year: 2026';
+    logFill.style.width = '100%';
+    numbersEl.innerHTML = '';
+
+    updateUI();
+  }
+
+  function printGraph() {
+    window.print();
+  }
+
+  // ----------------------
+  // BASIC TESTS
+  // ----------------------
+  console.assert(currentYear === 2026, 'Initial year should be 2026');
+  console.assert(wildDurian === 450_000_000, 'Initial wild durian should be 450M');
+  console.assert(typeof restartSimulation === 'function', 'restartSimulation should exist');
+
+  updateUI();
+</script>
+</body>
+</html>
